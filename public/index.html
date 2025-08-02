@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blotato Content Moderation API</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    .button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .results {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .results.safe {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .results.flagged {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .flag-item {
+      background: rgba(255, 255, 255, 0.8);
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+
+    .severity-high {
+      border-left-color: #dc3545;
+    }
+
+    .severity-medium {
+      border-left-color: #ffc107;
+    }
+
+    .severity-low {
+      border-left-color: #28a745;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      display: none;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .sample-buttons {
+      margin-bottom: 20px;
+    }
+
+    .sample-button {
+      margin: 5px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #f8f9fa;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sample-button:hover {
+      background: #e9ecef;
+    }
+
+    .debug-info {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 Blotato Content Moderation</h1>
+      <p>Test your content before posting to social media</p>
+    </div>
+
+    <div class="content">
+      <div class="sample-buttons">
+        <h4>Sample Content:</h4>
+        <button class="sample-button" onclick="setSampleContent('safe')">Safe Content</button>
+        <button class="sample-button" onclick="setSampleContent('profanity')">Profanity Test</button>
+        <button class="sample-button" onclick="setSampleContent('spam')">Spam Test</button>
+        <button class="sample-button" onclick="setSampleContent('personal')">Personal Info Test</button>
+      </div>
+
+      <form id="moderationForm">
+        <div class="form-group">
+          <label for="content">Content to moderate:</label>
+          <textarea id="content"
+            placeholder="Enter your content here...">This is a test message for content moderation. I hope this works well!</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="platform">Platform:</label>
+          <select id="platform">
+            <option value="twitter">Twitter</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="tiktok">TikTok</option>
+            <option value="youtube">YouTube</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="contentType">Content Type:</label>
+          <select id="contentType">
+            <option value="text">Text</option>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+          </select>
+        </div>
+
+        <button type="submit" class="button" id="submitBtn">Moderate Content</button>
+      </form>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Analyzing content...</p>
+      </div>
+
+      <div class="results" id="results">
+        <h3 id="resultTitle">Moderation Results</h3>
+        <div id="resultContent"></div>
+        <div class="stats" id="stats"></div>
+      </div>
+
+      <div class="debug-info" id="debugInfo"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:8005/api';
+
+    const sampleContent = {
+      safe: 'Great day today! Excited to share our new product launch. #innovation #tech',
+      profanity: 'This is absolutely terrible and I hate everything about it. You are stupid!',
+      spam: 'BUY NOW!!! LIMITED TIME OFFER!!! FREE MONEY!!! CLICK HERE!!! ACT NOW!!!',
+      personal: 'My email is john.doe@example.com and my phone is 555-123-4567. My SSN is 123-45-6789.'
+    };
+
+    function setSampleContent(type) {
+      document.getElementById('content').value = sampleContent[type];
+    }
+
+    function showDebugInfo(info) {
+      const debugDiv = document.getElementById('debugInfo');
+      debugDiv.textContent = JSON.stringify(info, null, 2);
+      debugDiv.style.display = 'block';
+    }
+
+    function displayResults(result) {
+      console.log('Displaying results:', result);
+
+      const results = document.getElementById('results');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultContent = document.getElementById('resultContent');
+      const stats = document.getElementById('stats');
+
+      // Set result class
+      results.className = `results ${result.is_flagged ? 'flagged' : 'safe'}`;
+
+      // Set title
+      resultTitle.textContent = result.is_flagged ? '⚠️ Content Flagged' : '✅ Content Safe';
+
+      // Display flags
+      let flagsHtml = '';
+      if (result.flags && result.flags.length > 0) {
+        flagsHtml = '<h4>Issues Found:</h4>';
+        result.flags.forEach(flag => {
+          flagsHtml += `
+                        <div class="flag-item severity-${flag.severity}">
+                            <strong>${flag.type}</strong> (${flag.severity} severity)
+                            <p>${flag.description}</p>
+                            ${flag.flagged_text ? `<p><strong>Flagged:</strong> ${flag.flagged_text}</p>` : ''}
+                            ${flag.suggestion ? `<p><strong>Suggestion:</strong> ${flag.suggestion}</p>` : ''}
+                        </div>
+                    `;
+        });
+      } else {
+        flagsHtml = '<p>No issues detected. Your content appears to be safe for posting.</p>';
+      }
+
+      resultContent.innerHTML = flagsHtml;
+
+      // Display stats
+      stats.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${result.flags ? result.flags.length : 0}</div>
+                    <div class="stat-label">Flags</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${result.overall_severity || 'N/A'}</div>
+                    <div class="stat-label">Severity</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${result.confidence_score ? (result.confidence_score * 100).toFixed(1) + '%' : 'N/A'}</div>
+                    <div class="stat-label">Confidence</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${result.safe_to_post ? '✅' : '❌'}</div>
+                    <div class="stat-label">Safe to Post</div>
+                </div>
+            `;
+
+      results.style.display = 'block';
+    }
+
+    function displayError(message) {
+      const results = document.getElementById('results');
+      const resultTitle = document.getElementById('resultTitle');
+      const resultContent = document.getElementById('resultContent');
+
+      results.className = 'results flagged';
+      resultTitle.textContent = '❌ Error';
+      resultContent.innerHTML = `<p>Error: ${message}</p>`;
+      results.style.display = 'block';
+    }
+
+    // Add event listener when the page loads
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('moderationForm');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        console.log('Form submitted');
+
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const debugInfo = document.getElementById('debugInfo');
+
+        // Show loading
+        submitBtn.disabled = true;
+        loading.style.display = 'block';
+        results.style.display = 'none';
+        debugInfo.style.display = 'none';
+
+        try {
+          const content = document.getElementById('content').value;
+          const platform = document.getElementById('platform').value;
+          const contentType = document.getElementById('contentType').value;
+
+          const requestData = {
+            content: content,
+            platform: platform,
+            content_type: contentType
+          };
+
+          console.log('Sending request:', requestData);
+
+          const response = await fetch(`${API_BASE}/moderate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+          });
+
+          console.log('Response status:', response.status);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log('Response data:', data);
+
+          // Show debug info
+          showDebugInfo(data);
+
+          if (data.success && data.data) {
+            displayResults(data.data);
+          } else {
+            throw new Error(data.message || 'Moderation failed');
+          }
+
+        } catch (error) {
+          console.error('Error:', error);
+          displayError(error.message);
+        } finally {
+          submitBtn.disabled = false;
+          loading.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
